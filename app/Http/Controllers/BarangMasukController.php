@@ -15,7 +15,10 @@ class BarangMasukController extends Controller
             ->orderBy('tanggal', 'desc')
             ->paginate(10);
 
-        return view('pages.barang-masuk', compact('barangMasuk', 'barang'));
+
+        $nextNomorNota = $this->generateNomorNota();
+
+        return view('pages.barang-masuk', compact('barangMasuk', 'barang', 'nextNomorNota'));
     }
 
     public function store(Request $request)
@@ -32,6 +35,8 @@ class BarangMasukController extends Controller
 
         DB::beginTransaction();
         try {
+            $validated['jumlah'] = $validated['stok'];
+
             $barangMasuk = BarangMasuk::create($validated);
 
             $barang = Barang::find($request->barang_id);
@@ -53,6 +58,13 @@ class BarangMasukController extends Controller
     {
         DB::beginTransaction();
         try {
+
+            if ($barangMasuk->barangKeluarDetails->count() > 0) {
+                return response()->json([
+                    'error' => 'Data tidak dapat dihapus karena sudah ada transaksi barang keluar'
+                ], 422);
+            }
+
             $barang = $barangMasuk->barang;
             $barang->stok -= $barangMasuk->stok;
             $barang->save();
@@ -82,11 +94,17 @@ class BarangMasukController extends Controller
             ->orderBy('tanggal', 'desc')
             ->paginate(10);
 
+
+        $nextNomorNota = $this->generateNomorNota();
+
         if ($request->ajax()) {
-            return response()->json($barangMasuk);
+            return response()->json([
+                'barangMasuk' => $barangMasuk,
+                'nextNomorNota' => $nextNomorNota
+            ]);
         }
 
-        return view('pages.barang-masuk', compact('barangMasuk'));
+        return view('pages.barang-masuk', compact('barangMasuk', 'nextNomorNota'));
     }
 
     public function searchBarang(Request $request)
@@ -101,5 +119,32 @@ class BarangMasukController extends Controller
 
         $barang = $query->with(['satuan', 'kategori'])->get();
         return response()->json($barang);
+    }
+
+
+    public function generateNomorNota()
+    {
+
+        $lastNota = BarangMasuk::where('nomor_nota', 'like', 'BM-%')
+            ->orderBy('id', 'desc')
+            ->first();
+
+        if (!$lastNota) {
+
+            return 'BM-1';
+        }
+
+
+        $lastNumber = (int) substr($lastNota->nomor_nota, 3);
+
+
+        $nextNumber = $lastNumber + 1;
+        return 'BM-' . $nextNumber;
+    }
+
+    public function getNextNomorNota()
+    {
+        $nextNomorNota = $this->generateNomorNota();
+        return response()->json(['nomor_nota' => $nextNomorNota]);
     }
 }

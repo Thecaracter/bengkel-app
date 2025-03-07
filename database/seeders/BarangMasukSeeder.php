@@ -12,20 +12,22 @@ class BarangMasukSeeder extends Seeder
     {
         $barangMasuks = [
             [
-                'nomor_nota' => 'BM-001',
+                'nomor_nota' => 'BM-1',
                 'tanggal' => '2024-01-24',
                 'barang_id' => 1,
                 'harga_beli' => 45000,
                 'harga_jual' => 55000,
                 'harga_ecer' => 30000,
+                'jumlah' => 10,
                 'stok' => 10
             ],
             [
-                'nomor_nota' => 'BM-002',
+                'nomor_nota' => 'BM-2',
                 'tanggal' => '2024-01-24',
                 'barang_id' => 2,
                 'harga_beli' => 35000,
                 'harga_jual' => 50000,
+                'jumlah' => 8,
                 'stok' => 8
             ]
         ];

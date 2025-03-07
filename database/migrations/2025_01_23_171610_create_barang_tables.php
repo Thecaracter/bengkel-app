@@ -1,5 +1,4 @@
 <?php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -39,6 +38,7 @@ return new class extends Migration {
             $table->decimal('harga_beli', 15, 2);
             $table->decimal('harga_jual', 15, 2);
             $table->decimal('harga_ecer', 15, 2)->nullable();
+            $table->decimal('jumlah', 8, 2);
             $table->decimal('stok', 8, 2);
             $table->foreignId('barang_id')->constrained('barang');
             $table->timestamps();

@@ -46,6 +46,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('barang-masuk/{barangMasuk}', 'destroy')->name('barang-masuk.destroy');
         Route::get('barang-masuk/search', 'search')->name('barang-masuk.search');
         Route::get('barang-masuk/search-barang', 'searchBarang')->name('barang-masuk.search-barang');
+        Route::get('barang-masuk/next-nomor-nota', 'getNextNomorNota')->name('barang-masuk.next-nomor-nota');
     });
 
     // Barang Keluar Routes

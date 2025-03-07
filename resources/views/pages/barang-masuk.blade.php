@@ -26,7 +26,8 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No Nota</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barang</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stok</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah Awal</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stok Tersisa</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga Beli</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga Jual</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga Ecer</th>
@@ -39,6 +40,7 @@
                                 <td class="px-6 py-4 whitespace-nowrap">{{ $bm->tanggal->format('d/m/Y') }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap">{{ $bm->nomor_nota }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap">{{ $bm->barang->nama }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">{{ number_format($bm->jumlah, 2) }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap">{{ number_format($bm->stok, 2) }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap">Rp {{ number_format($bm->harga_beli, 0, ',', '.') }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap">Rp {{ number_format($bm->harga_jual, 0, ',', '.') }}</td>
@@ -57,7 +59,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="px-6 py-4 whitespace-nowrap text-center">Tidak ada data</td>
+                                <td colspan="9" class="px-6 py-4 whitespace-nowrap text-center">Tidak ada data</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -80,7 +82,7 @@
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Nomor Nota</label>
-                                <input type="text" name="nomor_nota" class="mt-1 block w-full rounded-md border-gray-300" required>
+                                <input type="text" name="nomor_nota" id="nomorNota" value="{{ $nextNomorNota ?? 'BM-1' }}" class="mt-1 block w-full rounded-md border-gray-300" readonly>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Tanggal</label>
@@ -105,8 +107,9 @@
                                 </div>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Stok</label>
+                                <label class="block text-sm font-medium text-gray-700">Jumlah</label>
                                 <input type="number" name="stok" step="0.01" class="mt-1 block w-full rounded-md border-gray-300" required>
+                                <p class="mt-1 text-sm text-gray-500">Jumlah ini juga akan menjadi stok awal</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Harga Beli</label>
@@ -250,6 +253,22 @@
         function showCreateModal() {
             document.getElementById('createModal').classList.remove('hidden');
             document.getElementById('barcodeInput').focus();
+            
+            // Muat nomor nota terbaru setiap kali modal ditampilkan
+            refreshNomorNota();
+        }
+ 
+        async function refreshNomorNota() {
+            try {
+                const response = await fetch('/barang-masuk/next-nomor-nota', {
+                    headers: { 'Accept': 'application/json' }
+                });
+                
+                const data = await response.json();
+                document.getElementById('nomorNota').value = data.nomor_nota;
+            } catch (error) {
+                console.error('Error fetching nomor nota:', error);
+            }
         }
  
         function hideCreateModal() {
@@ -314,24 +333,25 @@
  
             try {
                 window.location.href = `{{ route('barang-masuk.index') }}?${params}`;
-            } catch (error) {alert('Error searching data');
-           }
-       }
+            } catch (error) {
+                alert('Error searching data');
+            }
+        }
 
-       document.getElementById('barangSearch').addEventListener('keydown', handleKeydown);
-       document.addEventListener('click', function(e) {
-           if (!e.target.closest('#barangDropdown') && !e.target.closest('#barangSearch')) {
-               hideDropdown();
-           }
-       });
+        document.getElementById('barangSearch').addEventListener('keydown', handleKeydown);
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#barangDropdown') && !e.target.closest('#barangSearch')) {
+                hideDropdown();
+            }
+        });
 
-       // Initialize search params from URL if exists
-       window.addEventListener('load', function() {
-           const params = new URLSearchParams(window.location.search);
-           document.getElementById('start_date').value = params.get('start_date') || '';
-           document.getElementById('end_date').value = params.get('end_date') || '';
-           document.getElementById('search').value = params.get('search') || '';
-       });
-   </script>
-   @endpush
+        // Initialize search params from URL if exists
+        window.addEventListener('load', function() {
+            const params = new URLSearchParams(window.location.search);
+            document.getElementById('start_date').value = params.get('start_date') || '';
+            document.getElementById('end_date').value = params.get('end_date') || '';
+            document.getElementById('search').value = params.get('search') || '';
+        });
+    </script>
+    @endpush
 </x-app-layout>

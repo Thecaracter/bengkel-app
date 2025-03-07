@@ -17,6 +17,7 @@ class BarangMasuk extends Model
         'harga_beli',
         'harga_jual',
         'harga_ecer',
+        'jumlah',
         'stok',
         'barang_id'
     ];
@@ -26,6 +27,7 @@ class BarangMasuk extends Model
         'harga_beli' => 'decimal:2',
         'harga_jual' => 'decimal:2',
         'harga_ecer' => 'decimal:2',
+        'jumlah' => 'decimal:2',
         'stok' => 'decimal:2'
     ];
 
