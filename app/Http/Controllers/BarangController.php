@@ -204,13 +204,17 @@ class BarangController extends Controller
                     'tanggal' => $stock->tanggal,
                     'nomor_nota' => $stock->nomor_nota,
                     'stok' => $stock->stok,
-                    'total_stok' => $totalStok,
+                    'totalStok' => $totalStok,
                     'harga_beli' => $stock->harga_beli,
                     'harga_jual' => $stock->harga_jual,
                     'harga_ecer' => $stock->harga_ecer
                 ];
             }));
         } catch (Exception $e) {
+            Log::error('Error getting stock', [
+                'error' => $e->getMessage(),
+                'barang_id' => $barang->id
+            ]);
             return response()->json(['message' => 'Gagal memuat data stok'], 500);
         }
     }

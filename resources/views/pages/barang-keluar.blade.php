@@ -37,7 +37,7 @@
                                     <input type="text" 
                                            x-model="search"
                                            @input.debounce.300ms="loadData()"
-                                           placeholder="Cari nomor nota atau nama barang..." 
+                                           placeholder="Cari nama barang..." 
                                            class="w-full px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
                                     <i class="fas fa-search absolute right-3 top-3 text-gray-400"></i>
                                 </div>
@@ -59,7 +59,6 @@
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">No. Nota</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Barang</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipe</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Item</th>
@@ -72,7 +71,6 @@
                                 <template x-for="item in items.data" :key="item.id">
                                     <tr class="hover:bg-gray-50">
                                         <td class="px-6 py-4 text-sm text-gray-900" x-text="formatDate(item.tanggal)"></td>
-                                        <td class="px-6 py-4 text-sm text-gray-900" x-text="item.detail[0].barang_masuk.nomor_nota"></td>
                                         <td class="px-6 py-4 text-sm text-gray-900">
                                             <template x-for="(detail, index) in item.detail" :key="detail.id">
                                                 <div :class="{ 'mt-1': index > 0 }">
@@ -120,7 +118,7 @@
                                     </tr>
                                 </template>
                                 <tr x-show="!items.data || items.data.length === 0">
-                                    <td colspan="8" class="px-6 py-4 text-sm text-gray-500 text-center">Tidak ada data</td>
+                                    <td colspan="7" class="px-6 py-4 text-sm text-gray-500 text-center">Tidak ada data</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -182,6 +180,7 @@
                                                        @input.debounce.300ms="searchBarangMasuk()"
                                                        @focus="searchResults.length > 0 && (showSearchResults = true)"
                                                        placeholder="Ketik nama atau scan barcode..."
+                                                       x-ref="searchInput"
                                                        class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                                                 
                                                 <!-- Search Results Dropdown -->
@@ -194,8 +193,6 @@
                                                                 class="px-4 py-2 hover:bg-gray-100 cursor-pointer">
                                                                 <div class="font-medium" x-text="result.nama_barang"></div>
                                                                 <div class="text-sm text-gray-600">
-                                                                    <span x-text="result.nomor_nota"></span>
-                                                                    <span class="mx-1">•</span>
                                                                     <span>Stok: 
                                                                         <span x-text="formatNumber(result.stok)"></span>
                                                                         <span x-text="result.satuan_normal"></span>
@@ -203,7 +200,7 @@
                                                                             (<span x-text="formatNumber(result.stok_ecer)"></span>
                                                                             <span x-text="result.satuan_ecer"></span>)
                                                                         </template>
-                                                                        </span>
+                                                                    </span>
                                                                 </div>
                                                             </li>
                                                         </template>
@@ -229,6 +226,7 @@
                                                     <input type="number"
                                                            step="0.01"
                                                            x-model="selectedJumlah"
+                                                           x-ref="jumlahInput"
                                                            class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                                                     <span class="text-gray-600 whitespace-nowrap" x-text="selectedBarang ? 
                                                        (selectedTipe === 'ecer' ? selectedBarang.satuan_ecer : selectedBarang.satuan_normal) : '-'"></span>
@@ -340,37 +338,6 @@
                         </div>
                     </div>
 
-                    <!-- Struk Modal -->
-                    <div x-show="showStrukModal"
-                         class="fixed inset-0 z-50 overflow-y-auto"
-                         style="display: none;">
-                        <div class="flex items-center justify-center min-h-screen px-4">
-                            <div class="fixed inset-0 bg-gray-500 bg-opacity-75" @click="closeStrukModal()"></div>
-
-                            <div class="relative bg-white rounded-lg overflow-hidden shadow-xl transform transition-all sm:max-w-lg sm:w-full">
-                                <div class="p-6">
-                                    <h3 class="text-lg font-medium text-gray-900 mb-4">Struk Barang Keluar</h3>
-                                    <div class="space-y-2">
-                                      
-                                    </div>
-                                    
-                                    <div class="mt-6 flex justify-end space-x-3">
-                                        <button type="button"
-                                                @click="closeStrukModal()"
-                                                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-                                            Tutup
-                                        </button>
-                                        <button type="button"
-                                                @click="printStruk()"
-                                                class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">
-                                            Cetak
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Alert -->
                     <div x-show="flash.message"
                          class="fixed bottom-0 right-0 m-4 max-w-sm w-full bg-white rounded-lg shadow-lg border-l-4 border-green-500 px-4 py-3"
@@ -390,40 +357,41 @@
     
     @push('scripts')
     <script>
-    function barangKeluarHandler() {
+   function barangKeluarHandler() {
     return {
-    // State Variables
-    search: '',
-    searchBarang: '',
-    searchResults: [],
-    showSearchResults: false,
-    selectedBarang: null,
-    selectedTipe: 'normal',
-    selectedJumlah: '',
-    items: {
-    data: [],
-    links: []
-    },
-    isModalOpen: false,
-    isDeleteModalOpen: false,
-    showStrukModal: false,
-    selectedId: null,
-    strukData: {},
-    filters: {
-    start_date: '',
-    end_date: ''
-    },
-    form: {
-    tanggal: new Date().toISOString().slice(0, 16),
-    keterangan: '',
-    items: []
-    },
-    errors: {},
-    flash: {
-    message: ''
-    },
-    // Lifecycle Methods
-    init() {
+        // State Variables
+        search: '',
+        searchBarang: '',
+        searchResults: [],
+        showSearchResults: false,
+        selectedBarang: null,
+        selectedTipe: 'normal',
+        selectedJumlah: '',
+        items: {
+            data: [],
+            links: []
+        },
+        isModalOpen: false,
+        isDeleteModalOpen: false,
+        showStrukModal: false,
+        selectedId: null,
+        strukData: {},
+        filters: {
+            start_date: '',
+            end_date: ''
+        },
+        form: {
+            tanggal: new Date().toISOString().slice(0, 16),
+            keterangan: '',
+            items: []
+        },
+        errors: {},
+        flash: {
+            message: ''
+        },
+        
+        // Lifecycle Methods
+        init() {
             this.loadData();
             // Auto focus ke input search saat modal dibuka
             this.$watch('isModalOpen', (value) => {
@@ -602,12 +570,6 @@
                 this.flash.message = result.message;
                 setTimeout(() => this.flash.message = '', 3000);
 
-                // Show struk if available
-                if (result.struk) {
-                    this.strukData = result.struk;
-                    this.showStrukModal = true;
-                }
-
                 await this.loadData();
                 this.closeModal();
             } catch (error) {
@@ -679,11 +641,6 @@
             this.selectedId = null;
         },
 
-        closeStrukModal() {
-            this.showStrukModal = false;
-            this.strukData = {};
-        },
-
         confirmDelete(id) {
             this.selectedId = id;
             this.isDeleteModalOpen = true;
@@ -691,32 +648,32 @@
 
         // Struk Methods
         async cetakStruk(id) {
-    try {
-        const response = await fetch(`/barang-keluar/${id}/cetak`, {
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
+            try {
+                const response = await fetch(`/barang-keluar/${id}/cetak`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Gagal memuat data struk');
+                }
+                
+                this.strukData = data;
+                
+                // Pastikan struktur data benar
+                this.strukData.items = this.strukData.items || [];
+                this.strukData.total_keseluruhan = this.strukData.total_keseluruhan || 'Rp 0,00';
+
+                this.printStruk();
+            } catch (error) {
+                console.error('Error:', error);
+                alert(error.message || 'Gagal mencetak struk');
             }
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'Gagal memuat data struk');
-        }
-        
-        this.strukData = data;
-        
-        // Pastikan struktur data benar
-        this.strukData.items = this.strukData.items || [];
-        this.strukData.total_keseluruhan = this.strukData.total_keseluruhan || 'Rp 0,00';
-
-        this.showStrukModal = true;
-    } catch (error) {
-        console.error('Error:', error);
-        alert(error.message || 'Gagal mencetak struk');
-    }
-},
+        },
 
         printStruk() {
     const strukWindow = window.open('', '_blank');
@@ -725,88 +682,123 @@
             <head>
                 <title>Struk Barang Keluar</title>
                 <style>
+                    @page {
+                        size: 58mm auto;
+                        margin: 0mm;
+                    }
                     body { 
                         font-family: monospace; 
-                        font-size: 12px;
-                        padding: 15px;
+                        font-size: 10px;
+                        width: 58mm;
+                        margin: 0 auto;
+                        padding: 3px;
                     }
                     .center { text-align: center; }
-                    .mt { margin-top: 10px; }
-                    .mb { margin-bottom: 10px; }
-                    table { width: 100%; border-collapse: collapse; }
-                    th, td { 
-                        padding: 3px 0; 
-                        border-bottom: 1px solid #ddd;
+                    .header { font-weight: bold; }
+                    .shop-name { font-size: 12px; font-weight: bold; margin-bottom: 2px; }
+                    .shop-address { font-size: 9px; line-height: 1.1; margin-bottom: 1px; }
+                    .shop-phone { font-size: 9px; margin-bottom: 2px; }
+                    .divider { border-bottom: 1px dashed #000; margin: 3px 0; }
+                    .bold-divider { border-bottom: 1px solid #000; margin: 3px 0; }
+                    
+                    table { 
+                        width: 100%; 
+                        border-collapse: collapse; 
+                        table-layout: fixed;
                     }
-                    th { text-align: left; }
-                    .items-table { margin-top: 10px; }
-                    .items-table th, .items-table td { 
-                        text-align: left; 
-                        padding: 5px;
+                    
+                    th, td { 
+                        font-size: 9px;
+                        padding: 2px; 
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                    }
+                    
+                    th { 
+                        font-weight: bold; 
+                        text-align: left;
+                    }
+                    
+                    .items-table {
+                        margin: 0;
+                    }
+                    
+                    .col-barang { width: 35%; text-align: left; }
+                    .col-qty { width: 10%; text-align: center; }
+                    .col-harga { width: 25%; text-align: right; }
+                    .col-total { width: 30%; text-align: right; }
+                    
+                    .total-row td {
+                        font-weight: bold;
+                        padding-top: 2px;
+                        font-size: 10px;
+                    }
+                    
+                    .date-row {
+                        margin: 2px 0;
+                        font-size: 9px;
+                    }
+                    
+                    .thanks {
+                        margin-top: 3px;
+                        font-style: italic;
+                        font-size: 9px;
                     }
                 </style>
             </head>
             <body>
                 <div class="center">
-                    <h3>STRUK BARANG KELUAR</h3>
-                    <div class="mb">==================</div>
+                    <div class="shop-name">UD. PRIMA ABADI</div>
+                    <div class="shop-address">JL. DIPONEGORO NO. 23 DEPAN SPBU KALISAT</div>
+                    <div class="shop-phone">082230497900</div>
                 </div>
-                <table>
-                    <tr>
-                        <th>Tanggal</th>
-                        <td>: ${this.strukData.tanggal}</td>
-                    </tr>
-                    <tr>
-                        <th>No. Nota</th>
-                        <td>: ${this.strukData.nomor_nota}</td>
-                    </tr>
-                </table>
+                <div class="bold-divider"></div>
+                <div class="center header" style="font-size: 11px;">NOTA BARANG</div>
+                <div class="divider"></div>
+                
+                <div class="date-row">Tanggal: ${this.strukData.tanggal}</div>
+                <div class="divider"></div>
 
                 <table class="items-table">
-                    <thead>
+                    <tr>
+                        <th class="col-barang">Barang</th>
+                        <th class="col-qty">Qty</th>
+                        <th class="col-harga">Harga</th>
+                        <th class="col-total">Total</th>
+                    </tr>
+                    <tr><td colspan="4"><div class="divider"></div></td></tr>
+                    ${this.strukData.items.map(item => `
                         <tr>
-                            <th>Nama Barang</th>
-                            <th>Jumlah</th>
-                            <th>Tipe</th>
-                            <th>Harga</th>
-                            <th>Total</th>
+                            <td class="col-barang">${item.nama_barang}</td>
+                            <td class="col-qty">${item.jumlah}</td>
+                            <td class="col-harga">${item.harga}</td>
+                            <td class="col-total">${item.total}</td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        ${this.strukData.items.map(item => `
-                            <tr>
-                                <td>${item.nama_barang}</td>
-                                <td>${item.jumlah}</td>
-                                <td>${item.tipe}</td>
-                                <td>${item.harga}</td>
-                                <td>${item.total}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <th colspan="4">Total Keseluruhan</th>
-                            <td>${this.strukData.total_keseluruhan}</td>
-                        </tr>
-                    </tfoot>
+                    `).join('')}
+                    <tr><td colspan="4"><div class="divider"></div></td></tr>
+                    <tr class="total-row">
+                        <td colspan="2">Total</td>
+                        <td colspan="2" class="col-total">${this.strukData.total_keseluruhan}</td>
+                    </tr>
                 </table>
 
-                <div class="center mt">
-                    <div>==================</div>
-                    <div>Terima Kasih</div>
-                </div>
+                <div class="divider"></div>
+                <div class="center thanks">Terima Kasih Atas Kunjungan Anda</div>
             </body>
         </html>
     `);
     strukWindow.document.close();
-    strukWindow.print();
+    setTimeout(() => {
+        strukWindow.print();
+    }, 250);
 },
 
         // Utility Methods
         changePage(url) {
             if (url) this.loadData(url);
         },
-
+        
         formatDate(date) {
             return new Date(date).toLocaleDateString('id-ID', {
                 year: 'numeric',
@@ -832,6 +824,6 @@
         }
     }
 }
-</script>
-@endpush
+    </script>
+    @endpush
 </x-app-layout>

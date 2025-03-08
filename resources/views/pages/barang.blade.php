@@ -285,16 +285,8 @@
         const response = await fetch(`/barang/${item.id}/stock`);
         const data = await response.json();
         
-        // Group by nomor_nota
-        const grouped = data.reduce((acc, curr) => {
-            if (!acc[curr.nomor_nota]) {
-                acc[curr.nomor_nota] = [];
-            }
-            acc[curr.nomor_nota].push(curr);
-            return acc;
-        }, {});
-
-        this.stocks = Object.values(grouped).flat();
+        this.stocks = data;
+        this.selectedItem = item;
         this.isStockModalOpen = true;
     } catch (error) {
         console.error('Error:', error);
@@ -309,20 +301,33 @@
                },
 
                async loadData() {
-                   try {
-                       const response = await fetch(`/barang?search=${this.search}`, {
-                           headers: {
-                               'Accept': 'application/json',
-                               'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                           }
-                       });
-                       if (!response.ok) throw new Error('Network response was not ok');
-                       this.items = await response.json();
-                   } catch (error) {
-                       console.error('Error:', error);
-                       alert('Gagal memuat data');
-                   }
-               },
+    try {
+        const response = await fetch(`/barang?search=${this.search}`, {
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        });
+        if (!response.ok) throw new Error('Network response was not ok');
+        
+        // Ambil data barang
+        const items = await response.json();
+        
+        // Proses untuk menghitung total stok
+        this.items = await Promise.all(items.map(async (item) => {
+            const stockResponse = await fetch(`/barang/${item.id}/stock`);
+            const stockData = await stockResponse.json();
+            
+            // Hitung total stok
+            item.stok = stockData.length > 0 ? stockData[stockData.length - 1].totalStok : 0;
+            
+            return item;
+        }));
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Gagal memuat data');
+    }
+},
 
                resetForm() {
                    this.form = {
