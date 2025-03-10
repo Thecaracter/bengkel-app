@@ -13,7 +13,7 @@ class BarangMasukSeeder extends Seeder
         $barangMasuks = [
             [
                 'nomor_nota' => 'BM-1',
-                'tanggal' => '2024-01-24',
+                'tanggal' => now(),
                 'barang_id' => 1,
                 'harga_beli' => 45000,
                 'harga_jual' => 55000,
@@ -23,7 +23,7 @@ class BarangMasukSeeder extends Seeder
             ],
             [
                 'nomor_nota' => 'BM-2',
-                'tanggal' => '2024-01-24',
+                'tanggal' => now(),
                 'barang_id' => 2,
                 'harga_beli' => 35000,
                 'harga_jual' => 50000,

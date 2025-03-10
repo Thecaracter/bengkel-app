@@ -60,6 +60,13 @@ return new class extends Migration {
             $table->enum('tipe', ['normal', 'ecer']);
             $table->timestamps();
         });
+        Schema::create('pengeluaran', function (Blueprint $table) {
+            $table->id();
+            $table->string('nama_pengeluaran');
+            $table->decimal('jumlah', 15, 2);
+            $table->date('tanggal');
+            $table->timestamps();
+        });
     }
 
     public function down()

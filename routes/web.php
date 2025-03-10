@@ -8,6 +8,7 @@ use App\Http\Controllers\KategoriController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\BarangMasukController;
 use App\Http\Controllers\BarangKeluarController;
+use App\Http\Controllers\PengeluaranController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -56,6 +57,15 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{barangKeluar}', 'destroy')->name('destroy');
         Route::get('/search-barang', 'loadBarangMasuk')->name('search');
         Route::get('/{barangKeluar}/cetak', 'cetakStruk')->name('cetak');
+    });
+
+    // Pengeluaran Routes
+    Route::controller(PengeluaranController::class)->group(function () {
+        Route::get('pengeluaran', 'index')->name('pengeluaran.index');
+        Route::post('pengeluaran', 'store')->name('pengeluaran.store');
+        Route::get('pengeluaran/{pengeluaran}', 'show')->name('pengeluaran.show');
+        Route::put('pengeluaran/{pengeluaran}', 'update')->name('pengeluaran.update');
+        Route::delete('pengeluaran/{pengeluaran}', 'destroy')->name('pengeluaran.destroy');
     });
 });
 

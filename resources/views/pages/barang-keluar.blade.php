@@ -338,6 +338,39 @@
                         </div>
                     </div>
 
+                    <!-- Konfirmasi Print Modal -->
+                    <div x-show="showConfirmPrintModal"
+                         class="fixed inset-0 z-50 overflow-y-auto"
+                         style="display: none;">
+                        <div class="flex items-center justify-center min-h-screen px-4">
+                            <div class="fixed inset-0 bg-gray-500 bg-opacity-75" @click="closeConfirmPrintModal()"></div>
+
+                            <div class="relative bg-white rounded-lg overflow-hidden shadow-xl transform transition-all sm:max-w-lg sm:w-full">
+                                <div class="p-6">
+                                    <div class="flex items-center justify-center mb-4">
+                                        <i class="fas fa-print text-4xl text-green-500 mr-3"></i>
+                                        <h3 class="text-lg font-medium text-gray-900">Cetak Struk</h3>
+                                    </div>
+                                    
+                                    <p class="text-center text-gray-600 mb-6">Transaksi berhasil disimpan. Apakah Anda ingin mencetak struk?</p>
+                                    
+                                    <div class="mt-4 flex justify-center space-x-3">
+                                        <button type="button"
+                                                @click="closeConfirmPrintModal()"
+                                                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                                            Tidak
+                                        </button>
+                                        <button type="button"
+                                                @click="printStruk(); closeConfirmPrintModal();"
+                                                class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">
+                                            Ya, Cetak Sekarang
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Alert -->
                     <div x-show="flash.message"
                          class="fixed bottom-0 right-0 m-4 max-w-sm w-full bg-white rounded-lg shadow-lg border-l-4 border-green-500 px-4 py-3"
@@ -353,6 +386,39 @@
             </div>
         </div>
     </div>
+    <!-- Konfirmasi Print Modal -->
+<div x-show="showConfirmPrintModal"
+x-cloak
+class="fixed inset-0 z-50 overflow-y-auto">
+<div class="flex items-center justify-center min-h-screen px-4">
+   <div class="fixed inset-0 bg-gray-500 bg-opacity-75" 
+        @click="closeConfirmPrintModal"></div>
+
+   <div class="relative bg-white rounded-lg overflow-hidden shadow-xl transform transition-all sm:max-w-lg sm:w-full">
+       <div class="p-6">
+           <div class="flex items-center justify-center mb-4">
+               <i class="fas fa-print text-4xl text-green-500 mr-3"></i>
+               <h3 class="text-lg font-medium text-gray-900">Cetak Struk</h3>
+           </div>
+           
+           <p class="text-center text-gray-600 mb-6">Transaksi berhasil disimpan. Apakah Anda ingin mencetak struk?</p>
+           
+           <div class="mt-4 flex justify-center space-x-3">
+               <button type="button"
+                       @click="closeConfirmPrintModal()"
+                       class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                   Tidak
+               </button>
+               <button type="button"
+                       @click="printStruk(); closeConfirmPrintModal();"
+                       class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">
+                   Ya, Cetak Sekarang
+               </button>
+           </div>
+       </div>
+   </div>
+</div>
+</div>
 
     
     @push('scripts')
@@ -373,7 +439,7 @@
         },
         isModalOpen: false,
         isDeleteModalOpen: false,
-        showStrukModal: false,
+        showConfirmPrintModal: false,
         selectedId: null,
         strukData: {},
         filters: {
@@ -393,7 +459,6 @@
         // Lifecycle Methods
         init() {
             this.loadData();
-            // Auto focus ke input search saat modal dibuka
             this.$watch('isModalOpen', (value) => {
                 if (value) {
                     setTimeout(() => {
@@ -451,7 +516,6 @@
                 this.searchResults = await response.json();
                 this.showSearchResults = true;
 
-                // Auto select if exact barcode match
                 if (this.searchResults.length === 1 && 
                     this.searchResults[0].barcode === this.searchBarang) {
                     this.selectBarang(this.searchResults[0]);
@@ -463,9 +527,138 @@
             }
         },
 
-        // Barang Selection Methods
+        // Form Submission Methods
+        async save() {
+    if (this.form.items.length === 0) {
+        alert('Tambahkan minimal satu barang');
+        return;
+    }
+
+    try {
+        const response = await fetch('/barang-keluar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(this.form)
+        });
+
+        const result = await response.json();
+        console.log('Save result:', result);
+
+        if (!response.ok) {
+            if (response.status === 422) {
+                this.errors = result.errors;
+                return;
+            }
+            throw new Error(result.error || 'Terjadi kesalahan');
+        }
+
+        // Set flash message
+        this.flash.message = result.message;
+        setTimeout(() => this.flash.message = '', 3000);
+
+        // Jika ada data struk langsung, gunakan itu
+        if (result.struk) {
+            this.strukData = result.struk;
+            
+            // Close form modal
+            this.closeModal();
+            
+            // Reload data
+            await this.loadData();
+            
+            // Show print confirmation modal
+            setTimeout(() => {
+                console.log('Showing print modal');
+                this.showConfirmPrintModal = true;
+            }, 100);
+        } else {
+            console.log('No struk data in response');
+            this.closeModal();
+            await this.loadData();
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert(error.message || 'Terjadi kesalahan! Silakan coba lagi.');
+    }
+},
+
+        // Struk Methods
+        async loadStrukData(id) {
+            try {
+                const response = await fetch(`/barang-keluar/${id}/cetak`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Gagal memuat data struk');
+                }
+                
+                this.strukData = data;
+                this.strukData.items = this.strukData.items || [];
+                this.strukData.total_keseluruhan = this.strukData.total_keseluruhan || 'Rp 0,00';
+            } catch (error) {
+                console.error('Error:', error);
+                alert(error.message || 'Gagal memuat data struk');
+            }
+        },
+
+        async cetakStruk(id) {
+            try {
+                await this.loadStrukData(id);
+                this.printStruk();
+            } catch (error) {
+                console.error('Error:', error);
+                alert(error.message || 'Gagal mencetak struk');
+            }
+        },
+
+        // Modal Methods
+        openModal() {
+            this.isModalOpen = true;
+            this.resetForm();
+        },
+
+        closeModal() {
+            if (this.form.items.length > 0) {
+                if (!confirm('Ada barang yang belum disimpan. Yakin ingin menutup?')) {
+                    return;
+                }
+            }
+            this.isModalOpen = false;
+            this.resetForm();
+        },
+
+        closeConfirmPrintModal() {
+            this.showConfirmPrintModal = false;
+            this.selectedId = null;
+        },
+
+        resetForm() {
+            this.form = {
+                tanggal: new Date().toISOString().slice(0, 16),
+                keterangan: '',
+                items: []
+            };
+            this.searchBarang = '';
+            this.selectedBarang = null;
+            this.selectedTipe = 'normal';
+            this.selectedJumlah = '';
+            this.searchResults = [];
+            this.errors = {};
+        },
+
+        // Remaining methods stay the same...
         selectBarang(barang) {
-            // Check if item already exists in form items
             const existingItem = this.form.items.find(item => 
                 item.barang_masuk_id === barang.id
             );
@@ -483,7 +676,6 @@
             this.searchBarang = barang.nama_barang;
             this.showSearchResults = false;
 
-            // Auto focus ke input jumlah
             setTimeout(() => {
                 this.$refs.jumlahInput?.focus();
                 this.$refs.jumlahInput?.select();
@@ -496,7 +688,6 @@
                 return;
             }
 
-            // Validate quantity against stock
             const quantity = parseFloat(this.selectedJumlah);
             const stock = this.selectedTipe === 'ecer' ? 
                 this.selectedBarang.stok_ecer : 
@@ -520,17 +711,12 @@
                     this.selectedBarang.satuan_normal
             };
 
-            // Add item to list
             this.form.items.push(item);
-
-            // Reset input for next scan
             this.searchBarang = '';
             this.selectedBarang = null;
             this.selectedTipe = 'normal';
             this.selectedJumlah = '';
             this.searchResults = [];
-
-            // Focus back to search input
             this.$refs.searchInput?.focus();
         },
 
@@ -538,44 +724,9 @@
             this.form.items.splice(index, 1);
         },
 
-        // Form Submission Methods
-        async save() {
-            if (this.form.items.length === 0) {
-                alert('Tambahkan minimal satu barang');
-                return;
-            }
-
-            try {
-                const response = await fetch('/barang-keluar', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify(this.form)
-                });
-
-                const result = await response.json();
-
-                if (!response.ok) {
-                    if (response.status === 422) {
-                        this.errors = result.errors;
-                        return;
-                    }
-                    throw new Error(result.error || 'Terjadi kesalahan');
-                }
-
-                this.flash.message = result.message;
-                setTimeout(() => this.flash.message = '', 3000);
-
-                await this.loadData();
-                this.closeModal();
-            } catch (error) {
-                console.error('Error:', error);
-                alert(error.message || 'Terjadi kesalahan! Silakan coba lagi.');
-            }
+        confirmDelete(id) {
+            this.selectedId = id;
+            this.isDeleteModalOpen = true;
         },
 
         async destroy() {
@@ -606,193 +757,129 @@
             }
         },
 
-        // Modal Methods
-        openModal() {
-            this.isModalOpen = true;
-            this.resetForm();
-        },
-
-        closeModal() {
-            if (this.form.items.length > 0) {
-                if (!confirm('Ada barang yang belum disimpan. Yakin ingin menutup?')) {
-                    return;
-                }
-            }
-            this.isModalOpen = false;
-            this.resetForm();
-        },
-
-        resetForm() {
-            this.form = {
-                tanggal: new Date().toISOString().slice(0, 16),
-                keterangan: '',
-                items: []
-            };
-            this.searchBarang = '';
-            this.selectedBarang = null;
-            this.selectedTipe = 'normal';
-            this.selectedJumlah = '';
-            this.searchResults = [];
-            this.errors = {};
-        },
-
         closeDeleteModal() {
             this.isDeleteModalOpen = false;
             this.selectedId = null;
         },
 
-        confirmDelete(id) {
-            this.selectedId = id;
-            this.isDeleteModalOpen = true;
-        },
-
-        // Struk Methods
-        async cetakStruk(id) {
-            try {
-                const response = await fetch(`/barang-keluar/${id}/cetak`, {
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.error || 'Gagal memuat data struk');
-                }
-                
-                this.strukData = data;
-                
-                // Pastikan struktur data benar
-                this.strukData.items = this.strukData.items || [];
-                this.strukData.total_keseluruhan = this.strukData.total_keseluruhan || 'Rp 0,00';
-
-                this.printStruk();
-            } catch (error) {
-                console.error('Error:', error);
-                alert(error.message || 'Gagal mencetak struk');
-            }
-        },
-
         printStruk() {
-    const strukWindow = window.open('', '_blank');
-    strukWindow.document.write(`
-        <html>
-            <head>
-                <title>Struk Barang Keluar</title>
-                <style>
-                    @page {
-                        size: 58mm auto;
-                        margin: 0mm;
-                    }
-                    body { 
-                        font-family: monospace; 
-                        font-size: 10px;
-                        width: 58mm;
-                        margin: 0 auto;
-                        padding: 3px;
-                    }
-                    .center { text-align: center; }
-                    .header { font-weight: bold; }
-                    .shop-name { font-size: 12px; font-weight: bold; margin-bottom: 2px; }
-                    .shop-address { font-size: 9px; line-height: 1.1; margin-bottom: 1px; }
-                    .shop-phone { font-size: 9px; margin-bottom: 2px; }
-                    .divider { border-bottom: 1px dashed #000; margin: 3px 0; }
-                    .bold-divider { border-bottom: 1px solid #000; margin: 3px 0; }
-                    
-                    table { 
-                        width: 100%; 
-                        border-collapse: collapse; 
-                        table-layout: fixed;
-                    }
-                    
-                    th, td { 
-                        font-size: 9px;
-                        padding: 2px; 
-                        white-space: nowrap;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                    }
-                    
-                    th { 
-                        font-weight: bold; 
-                        text-align: left;
-                    }
-                    
-                    .items-table {
-                        margin: 0;
-                    }
-                    
-                    .col-barang { width: 35%; text-align: left; }
-                    .col-qty { width: 10%; text-align: center; }
-                    .col-harga { width: 25%; text-align: right; }
-                    .col-total { width: 30%; text-align: right; }
-                    
-                    .total-row td {
-                        font-weight: bold;
-                        padding-top: 2px;
-                        font-size: 10px;
-                    }
-                    
-                    .date-row {
-                        margin: 2px 0;
-                        font-size: 9px;
-                    }
-                    
-                    .thanks {
-                        margin-top: 3px;
-                        font-style: italic;
-                        font-size: 9px;
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="center">
-                    <div class="shop-name">UD. PRIMA ABADI</div>
-                    <div class="shop-address">JL. DIPONEGORO NO. 23 DEPAN SPBU KALISAT</div>
-                    <div class="shop-phone">082230497900</div>
-                </div>
-                <div class="bold-divider"></div>
-                <div class="center header" style="font-size: 11px;">NOTA BARANG</div>
-                <div class="divider"></div>
-                
-                <div class="date-row">Tanggal: ${this.strukData.tanggal}</div>
-                <div class="divider"></div>
+            const strukWindow = window.open('', '_blank');
+            strukWindow.document.write(`
+                <html>
+                    <head>
+                        <title>Struk Barang Keluar</title>
+                        <style>
+                            @page {
+                                size: 58mm auto;
+                                margin: 0mm;
+                            }
+                            body { 
+                                font-family: monospace; 
+                                font-size: 10px;
+                                width: 58mm;
+                                margin: 0 auto;
+                                padding: 3px;
+                            }
+                            .center { text-align: center; }
+                            .header { font-weight: bold; }
+                            .shop-name { font-size: 12px; font-weight: bold; margin-bottom: 2px; }
+                            .shop-address { font-size: 9px; line-height: 1.1; margin-bottom: 1px; }
+                            .shop-phone { font-size: 9px; margin-bottom: 2px; }
+                            .divider { border-bottom: 1px dashed #000; margin: 3px 0; }
+                            .bold-divider { border-bottom: 1px solid #000; margin: 3px 0; }
+                            
+                            table { 
+                                width: 100%; 
+                                border-collapse: collapse; 
+                                table-layout: fixed;
+                            }
+                            
+                            th, td { 
+                                font-size: 9px;
+                                padding: 2px; 
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                            }
+                            
+                            th { 
+                                font-weight: bold; 
+                                text-align: left;
+                            }
+                            
+                            .items-table {
+                                margin: 0;
+                            }
+                            
+                            .col-barang { width: 35%; text-align: left; }
+                            .col-qty { width: 10%; text-align: center; }
+                            .col-harga { width: 25%; text-align: right; }
+                            .col-total { width: 30%; text-align: right; }
+                            
+                            .total-row td {
+                                font-weight: bold;
+                                padding-top: 2px;
+                                font-size: 10px;
+                            }
+                            
+                            .date-row {
+                                margin: 2px 0;
+                                font-size: 9px;
+                            }
+                            
+                            .thanks {
+                                margin-top: 3px;
+                                font-style: italic;
+                                font-size: 9px;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="center">
+                            <div class="shop-name">UD. PRIMA ABADI</div>
+                            <div class="shop-address">JL. DIPONEGORO NO. 23 DEPAN SPBU KALISAT</div>
+                            <div class="shop-phone">082230497900</div>
+                        </div>
+                        <div class="bold-divider"></div>
+                        <div class="center header" style="font-size: 11px;">NOTA BARANG</div>
+                        <div class="divider"></div>
+                        
+                        <div class="date-row">Tanggal: ${this.strukData.tanggal}</div>
+                        <div class="divider"></div>
 
-                <table class="items-table">
-                    <tr>
-                        <th class="col-barang">Barang</th>
-                        <th class="col-qty">Qty</th>
-                        <th class="col-harga">Harga</th>
-                        <th class="col-total">Total</th>
-                    </tr>
-                    <tr><td colspan="4"><div class="divider"></div></td></tr>
-                    ${this.strukData.items.map(item => `
-                        <tr>
-                            <td class="col-barang">${item.nama_barang}</td>
-                            <td class="col-qty">${item.jumlah}</td>
-                            <td class="col-harga">${item.harga}</td>
-                            <td class="col-total">${item.total}</td>
-                        </tr>
-                    `).join('')}
-                    <tr><td colspan="4"><div class="divider"></div></td></tr>
-                    <tr class="total-row">
-                        <td colspan="2">Total</td>
-                        <td colspan="2" class="col-total">${this.strukData.total_keseluruhan}</td>
-                    </tr>
-                </table>
+                        <table class="items-table">
+                            <tr>
+                                <th class="col-barang">Barang</th>
+                                <th class="col-qty">Qty</th>
+                                <th class="col-harga">Harga</th>
+                                <th class="col-total">Total</th>
+                            </tr>
+                            <tr><td colspan="4"><div class="divider"></div></td></tr>
+                            ${this.strukData.items.map(item => `
+                                <tr>
+                                    <td class="col-barang">${item.nama_barang}</td>
+                                    <td class="col-qty">${item.jumlah}</td>
+                                    <td class="col-harga">${item.harga}</td>
+                                    <td class="col-total">${item.total}</td>
+                                </tr>
+                            `).join('')}
+                            <tr><td colspan="4"><div class="divider"></div></td></tr>
+                            <tr class="total-row">
+                                <td colspan="2">Total</td>
+                                <td colspan="2" class="col-total">${this.strukData.total_keseluruhan}</td>
+                            </tr>
+                        </table>
 
-                <div class="divider"></div>
-                <div class="center thanks">Terima Kasih Atas Kunjungan Anda</div>
-            </body>
-        </html>
-    `);
-    strukWindow.document.close();
-    setTimeout(() => {
-        strukWindow.print();
-    }, 250);
-},
+                        <div class="divider"></div>
+                        <div class="center thanks">Terima Kasih Atas Kunjungan Anda</div>
+                    </body>
+                </html>
+            `);
+            strukWindow.document.close();
+            setTimeout(() => {
+                strukWindow.print();
+            }, 250);
+        },
 
         // Utility Methods
         changePage(url) {
@@ -824,6 +911,6 @@
         }
     }
 }
-    </script>
-    @endpush
+</script>
+@endpush
 </x-app-layout>

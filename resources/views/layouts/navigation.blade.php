@@ -26,8 +26,11 @@
         <a href="{{ route('barang-masuk.index') }}" class="block px-4 py-3 text-blue-300 hover:bg-blue-800/50 hover:text-white rounded-lg mx-2 transition-all duration-200 {{ request()->routeIs('barang-masuk.index') ? 'bg-blue-800/50 text-white' : '' }}">
             <i class="fas fa-arrow-right mr-3"></i>Barang Masuk
         </a>
-        <a href="{{ route('barang-keluar.index') }}" class="block px-4 py-3 text-blue-300 hover:bg-blue-800/50 hover:text-white rounded-lg mx-2 transition-all duration-200">
+        <a href="{{ route('barang-keluar.index') }}" class="block px-4 py-3 text-blue-300 hover:bg-blue-800/50 hover:text-white rounded-lg mx-2 transition-all duration-200 {{ request()->routeIs('barang-keluar.index') ? 'bg-blue-800/50 text-white' : '' }}">
             <i class="fas fa-arrow-left mr-3"></i>Barang Keluar
+        </a>
+        <a href="{{ route('pengeluaran.index') }}" class="block px-4 py-3 text-blue-300 hover:bg-blue-800/50 hover:text-white rounded-lg mx-2 transition-all duration-200 {{ request()->routeIs('pengeluaran.index') ? 'bg-blue-800/50 text-white' : '' }}">
+            <i class="fas fa-money-bill-wave mr-3"></i>Pengeluaran
         </a>
     </div>
  
