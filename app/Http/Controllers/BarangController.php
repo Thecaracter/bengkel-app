@@ -17,7 +17,7 @@ class BarangController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Barang::with(['kategori', 'satuan', 'barangMasuk']);
+            $query = Barang::with(['kategori', 'satuan']);
 
             if ($request->search) {
                 $query->where(function ($q) use ($request) {
@@ -193,23 +193,11 @@ class BarangController extends Controller
     {
         try {
             $stocks = BarangMasuk::where('barang_id', $barang->id)
-                ->select('tanggal', 'nomor_nota', 'stok', 'harga_beli', 'harga_jual', 'harga_ecer')
+                ->select('id', 'tanggal', 'nomor_nota', 'jumlah', 'stok', 'harga_beli', 'harga_jual', 'harga_ecer')
                 ->orderBy('tanggal', 'desc')
                 ->get();
 
-            $totalStok = 0;
-            return response()->json($stocks->map(function ($stock) use (&$totalStok) {
-                $totalStok += $stock->stok;
-                return [
-                    'tanggal' => $stock->tanggal,
-                    'nomor_nota' => $stock->nomor_nota,
-                    'stok' => $stock->stok,
-                    'totalStok' => $totalStok,
-                    'harga_beli' => $stock->harga_beli,
-                    'harga_jual' => $stock->harga_jual,
-                    'harga_ecer' => $stock->harga_ecer
-                ];
-            }));
+            return response()->json($stocks);
         } catch (Exception $e) {
             Log::error('Error getting stock', [
                 'error' => $e->getMessage(),

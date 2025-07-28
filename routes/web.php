@@ -1,72 +1,50 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\BarangController;
-use App\Http\Controllers\SatuanController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\KategoriController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\BarangController;
+use App\Http\Controllers\KategoriController;
+use App\Http\Controllers\SatuanController;
 use App\Http\Controllers\BarangMasukController;
 use App\Http\Controllers\BarangKeluarController;
 use App\Http\Controllers\PengeluaranController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
-
 Route::middleware('auth')->group(function () {
-    // Profile routes
+    // Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Master data routes
-    Route::resources([
-        'satuan' => SatuanController::class,
-        'kategori' => KategoriController::class
-    ]);
+    // Barang (accessible by both admin and user)
+    Route::resource('barang', BarangController::class);
+    Route::get('/barang/{barang}/stock', [BarangController::class, 'getStock']);
 
-    // Barang routes
-    Route::controller(BarangController::class)->group(function () {
-        Route::get('barang', 'index')->name('barang.index');
-        Route::post('barang', 'store')->name('barang.store');
-        Route::get('barang/{barang}', 'show')->name('barang.show');
-        Route::put('barang/{barang}', 'update')->name('barang.update');
-        Route::delete('barang/{barang}', 'destroy')->name('barang.destroy');
-        Route::get('barang/{barang}/stock', 'getStock')->name('barang.stock');
-    });
+    // Barang Masuk endpoints for adding stock and history
+    Route::get('/barang-masuk', [BarangMasukController::class, 'index'])->name('barang-masuk.index');
+    Route::post('/barang-masuk', [BarangMasukController::class, 'store'])->name('barang-masuk.store');
+    Route::get('/barang-masuk/search', [BarangMasukController::class, 'search']);
+    Route::get('/barang-masuk/next-nomor-nota', [BarangMasukController::class, 'getNextNomorNota']);
+    Route::delete('/barang-masuk/{barangMasuk}', [BarangMasukController::class, 'destroy'])->name('barang-masuk.destroy');
 
-    // Barang Masuk Routes
-    Route::controller(BarangMasukController::class)->group(function () {
-        Route::get('barang-masuk', 'index')->name('barang-masuk.index');
-        Route::post('barang-masuk', 'store')->name('barang-masuk.store');
-        Route::delete('barang-masuk/{barangMasuk}', 'destroy')->name('barang-masuk.destroy');
-        Route::get('barang-masuk/search', 'search')->name('barang-masuk.search');
-        Route::get('barang-masuk/search-barang', 'searchBarang')->name('barang-masuk.search-barang');
-        Route::get('barang-masuk/next-nomor-nota', 'getNextNomorNota')->name('barang-masuk.next-nomor-nota');
-    });
+    // Barang Keluar (accessible by both admin and user)
+    Route::resource('barang-keluar', BarangKeluarController::class);
+    Route::get('/barang-keluar/search-barang', [BarangKeluarController::class, 'loadBarangMasuk']);
+    Route::get('/barang-keluar/{barangKeluar}/cetak', [BarangKeluarController::class, 'cetakStruk']);
 
-    // Barang Keluar Routes
-    Route::controller(BarangKeluarController::class)->prefix('barang-keluar')->name('barang-keluar.')->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::post('/', 'store')->name('store');
-        Route::delete('/{barangKeluar}', 'destroy')->name('destroy');
-        Route::get('/search-barang', 'loadBarangMasuk')->name('search');
-        Route::get('/{barangKeluar}/cetak', 'cetakStruk')->name('cetak');
-    });
+    // Admin only routes (check in navigation/controller)
+    Route::resource('satuan', SatuanController::class);
+    Route::resource('kategori', KategoriController::class);
+    Route::resource('pengeluaran', PengeluaranController::class);
 
-    // Pengeluaran Routes
-    Route::controller(PengeluaranController::class)->group(function () {
-        Route::get('pengeluaran', 'index')->name('pengeluaran.index');
-        Route::post('pengeluaran', 'store')->name('pengeluaran.store');
-        Route::get('pengeluaran/{pengeluaran}', 'show')->name('pengeluaran.show');
-        Route::put('pengeluaran/{pengeluaran}', 'update')->name('pengeluaran.update');
-        Route::delete('pengeluaran/{pengeluaran}', 'destroy')->name('pengeluaran.destroy');
-    });
+    // Remove duplicate routes since they're already defined above
 });
 
 require __DIR__ . '/auth.php';

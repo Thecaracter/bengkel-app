@@ -7,31 +7,43 @@
     </div>
  
     <div class="flex-1 py-4">
+        <!-- Dashboard - Ditampilkan untuk semua user -->
         <a href="{{ route('dashboard') }}" class="block px-4 py-3 text-blue-300 hover:bg-blue-800/50 hover:text-white rounded-lg mx-2 transition-all duration-200 {{ request()->routeIs('dashboard') ? 'bg-blue-800/50 text-white' : '' }}">
             <i class="fas fa-home mr-3"></i>Dashboard
-         </a>
+        </a>
        
-        <div class="px-4 py-2 text-blue-400 text-xs font-bold uppercase tracking-wider">Master Data</div>
-        <a href="{{ route('satuan.index') }}" class="block px-4 py-3 text-blue-300 hover:bg-blue-800/50 hover:text-white rounded-lg mx-2 transition-all duration-200 {{ request()->routeIs('satuan.index') ? 'bg-blue-800/50 text-white' : '' }}">
-            <i class="fas fa-ruler mr-3"></i>Satuan
-         </a>
-         <a href="{{ route('kategori.index') }}" class="block px-4 py-3 text-blue-300 hover:bg-blue-800/50 hover:text-white rounded-lg mx-2 transition-all duration-200 {{ request()->routeIs('kategori.index') ? 'bg-blue-800/50 text-white' : '' }}">
-            <i class="fas fa-tags mr-3"></i>Kategori 
-         </a>
-         <a href="{{ route('barang.index') }}" class="block px-4 py-3 text-blue-300 hover:bg-blue-800/50 hover:text-white rounded-lg mx-2 transition-all duration-200 {{ request()->routeIs('barang.index') ? 'bg-blue-800/50 text-white' : '' }}">
-            <i class="fas fa-box mr-3"></i>Barang
-         </a>
+        <!-- Menu Master Data - Hanya untuk admin -->
+        @if(Auth::user()->name === 'admin')
+            <div class="px-4 py-2 text-blue-400 text-xs font-bold uppercase tracking-wider">Master Data</div>
+            <a href="{{ route('satuan.index') }}" class="block px-4 py-3 text-blue-300 hover:bg-blue-800/50 hover:text-white rounded-lg mx-2 transition-all duration-200 {{ request()->routeIs('satuan.index') ? 'bg-blue-800/50 text-white' : '' }}">
+                <i class="fas fa-ruler mr-3"></i>Satuan
+            </a>
+            <a href="{{ route('kategori.index') }}" class="block px-4 py-3 text-blue-300 hover:bg-blue-800/50 hover:text-white rounded-lg mx-2 transition-all duration-200 {{ request()->routeIs('kategori.index') ? 'bg-blue-800/50 text-white' : '' }}">
+                <i class="fas fa-tags mr-3"></i>Kategori 
+            </a>
+            <a href="{{ route('barang.index') }}" class="block px-4 py-3 text-blue-300 hover:bg-blue-800/50 hover:text-white rounded-lg mx-2 transition-all duration-200 {{ request()->routeIs('barang.index') ? 'bg-blue-800/50 text-white' : '' }}">
+                <i class="fas fa-box mr-3"></i>Barang
+            </a>
+        @endif
  
         <div class="px-4 py-2 text-blue-400 text-xs font-bold uppercase tracking-wider mt-4">Transaksi</div>
-        <a href="{{ route('barang-masuk.index') }}" class="block px-4 py-3 text-blue-300 hover:bg-blue-800/50 hover:text-white rounded-lg mx-2 transition-all duration-200 {{ request()->routeIs('barang-masuk.index') ? 'bg-blue-800/50 text-white' : '' }}">
-            <i class="fas fa-arrow-right mr-3"></i>Barang Masuk
-        </a>
-        <a href="{{ route('barang-keluar.index') }}" class="block px-4 py-3 text-blue-300 hover:bg-blue-800/50 hover:text-white rounded-lg mx-2 transition-all duration-200 {{ request()->routeIs('barang-keluar.index') ? 'bg-blue-800/50 text-white' : '' }}">
-            <i class="fas fa-arrow-left mr-3"></i>Barang Keluar
-        </a>
-        <a href="{{ route('pengeluaran.index') }}" class="block px-4 py-3 text-blue-300 hover:bg-blue-800/50 hover:text-white rounded-lg mx-2 transition-all duration-200 {{ request()->routeIs('pengeluaran.index') ? 'bg-blue-800/50 text-white' : '' }}">
-            <i class="fas fa-money-bill-wave mr-3"></i>Pengeluaran
-        </a>
+        
+        <!-- Menu Transaksi - Ditampilkan berdasarkan role -->
+        @if(Auth::user()->name === 'admin')
+            <!-- Admin melihat semua menu transaksi -->
+            
+            <a href="{{ route('barang-keluar.index') }}" class="block px-4 py-3 text-blue-300 hover:bg-blue-800/50 hover:text-white rounded-lg mx-2 transition-all duration-200 {{ request()->routeIs('barang-keluar.index') ? 'bg-blue-800/50 text-white' : '' }}">
+                <i class="fas fa-arrow-left mr-3"></i>Barang Keluar
+            </a>
+            <a href="{{ route('pengeluaran.index') }}" class="block px-4 py-3 text-blue-300 hover:bg-blue-800/50 hover:text-white rounded-lg mx-2 transition-all duration-200 {{ request()->routeIs('pengeluaran.index') ? 'bg-blue-800/50 text-white' : '' }}">
+                <i class="fas fa-money-bill-wave mr-3"></i>Pengeluaran
+            </a>
+        @elseif(Auth::user()->name === 'user')
+            <!-- User hanya melihat Barang Keluar -->
+            <a href="{{ route('barang-keluar.index') }}" class="block px-4 py-3 text-blue-300 hover:bg-blue-800/50 hover:text-white rounded-lg mx-2 transition-all duration-200 {{ request()->routeIs('barang-keluar.index') ? 'bg-blue-800/50 text-white' : '' }}">
+                <i class="fas fa-arrow-left mr-3"></i>Barang Keluar
+            </a>
+        @endif
     </div>
  
     <div class="border-t border-blue-800/50 w-full">
@@ -62,4 +74,4 @@
             </div>
         </div>
     </div>
- </nav>
+</nav>

@@ -28,6 +28,13 @@
                                        @change="loadData()"
                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
                             </div>
+                            <div class="w-full md:w-auto flex items-end">
+                                <button @click="resetFilter()" 
+                                        class="w-full md:w-auto px-3 py-2 bg-gray-500 hover:bg-gray-600 text-white text-sm font-medium rounded-lg inline-flex items-center justify-center">
+                                    <i class="fas fa-refresh mr-1"></i>
+                                    Hari Ini
+                                </button>
+                            </div>
                         </div>
                         
                         <div class="flex flex-col md:flex-row gap-4 md:justify-end">
@@ -53,6 +60,27 @@
                         </div>
                     </div>
 
+                    <!-- Info Filter Active -->
+                    <div x-show="isFilterActive()" class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                                <span class="text-sm text-blue-700">
+                                    <span x-show="isTodayFilter()">Menampilkan penjualan hari ini</span>
+                                    <span x-show="!isTodayFilter() && (filters.start_date || filters.end_date)">
+                                        Filter aktif: <span x-text="formatDate(filters.start_date)"></span> - <span x-text="formatDate(filters.end_date)"></span>
+                                    </span>
+                                    <span x-show="search && !filters.start_date && !filters.end_date">
+                                        Pencarian: "<span x-text="search"></span>"
+                                    </span>
+                                </span>
+                            </div>
+                            <button @click="clearAllFilters()" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                                Lihat Semua Data
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Table -->
                     <div class="overflow-x-auto border border-gray-200 rounded-lg">
                         <table class="min-w-full divide-y divide-gray-200">
@@ -60,9 +88,10 @@
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Barang</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipe</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Item</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Harga</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bayar</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kembalian</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Keterangan</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aksi</th>
                                 </tr>
@@ -74,16 +103,10 @@
                                         <td class="px-6 py-4 text-sm text-gray-900">
                                             <template x-for="(detail, index) in item.detail" :key="detail.id">
                                                 <div :class="{ 'mt-1': index > 0 }">
-                                                    <span x-text="detail.barang_masuk.barang.nama"></span>
-                                                </div>
-                                            </template>
-                                        </td>
-                                        <td class="px-6 py-4 text-sm">
-                                            <template x-for="(detail, index) in item.detail" :key="detail.id">
-                                                <div :class="{ 'mt-1': index > 0 }">
+                                                    <span x-text="detail.barang_masuk?.barang?.nama || 'Barang tidak ditemukan'"></span>
                                                     <span :class="detail.tipe === 'normal' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'"
-                                                          class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
-                                                          x-text="detail.tipe === 'normal' ? 'Normal' : 'Ecer'"></span>
+                                                          class="ml-1 px-1 inline-flex text-xs leading-4 font-semibold rounded"
+                                                          x-text="detail.tipe === 'normal' ? 'N' : 'E'"></span>
                                                 </div>
                                             </template>
                                         </td>
@@ -92,18 +115,14 @@
                                                 <div :class="{ 'mt-1': index > 0 }">
                                                     <span x-text="formatNumber(detail.jumlah)"></span>
                                                     <span class="text-gray-600" x-text="detail.tipe === 'ecer' ? 
-                                                        (detail.barang_masuk.barang.satuan.nama_ecer || detail.barang_masuk.barang.satuan.nama) : 
-                                                        detail.barang_masuk.barang.satuan.nama"></span>
+                                                        (detail.barang_masuk?.barang?.satuan?.nama_ecer || detail.barang_masuk?.barang?.satuan?.nama || '') : 
+                                                        (detail.barang_masuk?.barang?.satuan?.nama || '')"></span>
                                                 </div>
                                             </template>
                                         </td>
-                                        <td class="px-6 py-4 text-sm text-gray-900">
-                                            <template x-for="(detail, index) in item.detail" :key="detail.id">
-                                                <div :class="{ 'mt-1': index > 0 }">
-                                                    <span x-text="formatCurrency(detail.jumlah * detail.harga)"></span>
-                                                </div>
-                                            </template>
-                                        </td>
+                                        <td class="px-6 py-4 text-sm text-gray-900 font-semibold" x-text="formatCurrency(item.total_harga)"></td>
+                                        <td class="px-6 py-4 text-sm text-gray-900" x-text="formatCurrency(item.jumlah_bayar)"></td>
+                                        <td class="px-6 py-4 text-sm text-gray-900" x-text="formatCurrency(item.kembalian)"></td>
                                         <td class="px-6 py-4 text-sm text-gray-900" x-text="item.keterangan || '-'"></td>
                                         <td class="px-6 py-4">
                                             <div class="flex space-x-3">
@@ -118,7 +137,10 @@
                                     </tr>
                                 </template>
                                 <tr x-show="!items.data || items.data.length === 0">
-                                    <td colspan="7" class="px-6 py-4 text-sm text-gray-500 text-center">Tidak ada data</td>
+                                    <td colspan="8" class="px-6 py-4 text-sm text-gray-500 text-center">
+                                        <span x-show="isTodayFilter()">Tidak ada penjualan hari ini</span>
+                                        <span x-show="!isTodayFilter()">Tidak ada data</span>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -148,7 +170,7 @@
                         <div class="flex items-center justify-center min-h-screen px-4">
                             <div class="fixed inset-0 bg-gray-500 bg-opacity-75" @click="closeModal()"></div>
 
-                            <div class="relative bg-white rounded-lg overflow-hidden shadow-xl transform transition-all sm:max-w-2xl sm:w-full">
+                            <div class="relative bg-white rounded-lg overflow-hidden shadow-xl transform transition-all sm:max-w-4xl sm:w-full">
                                 <form @submit.prevent="save" @keydown.enter.prevent class="p-6">
                                     <h3 class="text-lg font-medium text-gray-900 mb-4">Tambah Barang Keluar</h3>
                                     
@@ -289,6 +311,48 @@
                                                     </tbody>
                                                 </table>
                                             </div>
+
+                                            <!-- Total dan Payment Section -->
+                                            <div class="mt-4 bg-gray-50 p-4 rounded-lg">
+                                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                    <div class="text-center">
+                                                        <label class="block text-sm font-medium text-gray-700 mb-1">Total Belanja</label>
+                                                        <div class="text-lg font-bold text-green-600" x-text="formatCurrency(calculateTotal())"></div>
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-sm font-medium text-gray-700 mb-1">Jumlah Bayar</label>
+                                                        <input type="number"
+                                                               step="0.01"
+                                                               x-model="form.jumlah_bayar"
+                                                               @input="calculateChange()"
+                                                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                                        <div x-show="errors.jumlah_bayar" class="mt-1 text-sm text-red-600" x-text="errors.jumlah_bayar"></div>
+                                                    </div>
+                                                    <div class="text-center">
+                                                        <label class="block text-sm font-medium text-gray-700 mb-1">Kembalian</label>
+                                                        <div class="text-lg font-bold" 
+                                                             :class="calculated_change >= 0 ? 'text-blue-600' : 'text-red-600'"
+                                                             x-text="formatCurrency(calculated_change)"></div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Quick Payment Buttons -->
+                                                <div class="mt-3">
+                                                    <label class="block text-sm font-medium text-gray-700 mb-2">Pembayaran Cepat:</label>
+                                                    <div class="flex flex-wrap gap-2">
+                                                        <button type="button" @click="setPayment(calculateTotal())" 
+                                                                class="px-3 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded">Pas</button>
+                                                        <button type="button" @click="setPayment(50000)" 
+                                                                class="px-3 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded">50rb</button>
+                                                        <button type="button" @click="setPayment(100000)" 
+                                                                class="px-3 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded">100rb</button>
+                                                        <button type="button" @click="setPayment(200000)" 
+                                                                class="px-3 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded">200rb</button>
+                                                        <button type="button" @click="setPayment(500000)" 
+                                                                class="px-3 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded">500rb</button>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -299,9 +363,9 @@
                                             Batal
                                         </button>
                                         <button type="submit"
-                                                :disabled="form.items.length === 0"
+                                                :disabled="form.items.length === 0 || !form.jumlah_bayar || calculated_change < 0"
                                                 class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed">
-                                            Simpan
+                                            Simpan Transaksi
                                         </button>
                                     </div>
                                 </form>
@@ -386,44 +450,10 @@
             </div>
         </div>
     </div>
-    <!-- Konfirmasi Print Modal -->
-<div x-show="showConfirmPrintModal"
-x-cloak
-class="fixed inset-0 z-50 overflow-y-auto">
-<div class="flex items-center justify-center min-h-screen px-4">
-   <div class="fixed inset-0 bg-gray-500 bg-opacity-75" 
-        @click="closeConfirmPrintModal"></div>
-
-   <div class="relative bg-white rounded-lg overflow-hidden shadow-xl transform transition-all sm:max-w-lg sm:w-full">
-       <div class="p-6">
-           <div class="flex items-center justify-center mb-4">
-               <i class="fas fa-print text-4xl text-green-500 mr-3"></i>
-               <h3 class="text-lg font-medium text-gray-900">Cetak Struk</h3>
-           </div>
-           
-           <p class="text-center text-gray-600 mb-6">Transaksi berhasil disimpan. Apakah Anda ingin mencetak struk?</p>
-           
-           <div class="mt-4 flex justify-center space-x-3">
-               <button type="button"
-                       @click="closeConfirmPrintModal()"
-                       class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-                   Tidak
-               </button>
-               <button type="button"
-                       @click="printStruk(); closeConfirmPrintModal();"
-                       class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">
-                   Ya, Cetak Sekarang
-               </button>
-           </div>
-       </div>
-   </div>
-</div>
-</div>
-
     
     @push('scripts')
     <script>
-   function barangKeluarHandler() {
+function barangKeluarHandler() {
     return {
         // State Variables
         search: '',
@@ -433,6 +463,7 @@ class="fixed inset-0 z-50 overflow-y-auto">
         selectedBarang: null,
         selectedTipe: 'normal',
         selectedJumlah: '',
+        calculated_change: 0,
         items: {
             data: [],
             links: []
@@ -443,12 +474,13 @@ class="fixed inset-0 z-50 overflow-y-auto">
         selectedId: null,
         strukData: {},
         filters: {
-            start_date: '',
-            end_date: ''
+            start_date: '', // Kosongkan default
+            end_date: ''    // Kosongkan default
         },
         form: {
             tanggal: new Date().toISOString().slice(0, 16),
             keterangan: '',
+            jumlah_bayar: '',
             items: []
         },
         errors: {},
@@ -468,14 +500,67 @@ class="fixed inset-0 z-50 overflow-y-auto">
             });
         },
 
+        // Payment Methods
+        calculateTotal() {
+            return this.form.items.reduce((total, item) => {
+                return total + (item.jumlah * item.harga);
+            }, 0);
+        },
+
+        calculateChange() {
+            const total = this.calculateTotal();
+            const bayar = parseFloat(this.form.jumlah_bayar) || 0;
+            this.calculated_change = bayar - total;
+        },
+
+        setPayment(amount) {
+            this.form.jumlah_bayar = amount;
+            this.calculateChange();
+        },
+
+        // Filter Methods
+        resetFilter() {
+            const today = new Date().toISOString().slice(0, 10);
+            this.filters.start_date = today;
+            this.filters.end_date = today;
+            this.loadData();
+        },
+
+        clearAllFilters() {
+            this.filters.start_date = '';
+            this.filters.end_date = '';
+            this.search = '';
+            this.loadData();
+        },
+
+        isFilterActive() {
+            return this.filters.start_date || this.filters.end_date || this.search;
+        },
+
+        isTodayFilter() {
+            const today = new Date().toISOString().slice(0, 10);
+            return this.filters.start_date === today && this.filters.end_date === today;
+        },
+
         // Data Loading Methods
         async loadData(url = null) {
             try {
                 const params = new URLSearchParams({
-                    search: this.search || '',
-                    start_date: this.filters.start_date || '',
-                    end_date: this.filters.end_date || ''
+                    search: this.search || ''
                 });
+
+                // Hanya tambahkan filter tanggal jika memang ada nilai
+                if (this.filters.start_date) {
+                    params.append('start_date', this.filters.start_date);
+                }
+                if (this.filters.end_date) {
+                    params.append('end_date', this.filters.end_date);
+                }
+
+                // Add reset_filter parameter jika tidak ada filter tanggal
+                if (!this.filters.start_date && !this.filters.end_date) {
+                    params.append('reset_filter', '1');
+                }
 
                 const response = await fetch(url || `/barang-keluar?${params}`, {
                     headers: {
@@ -529,63 +614,65 @@ class="fixed inset-0 z-50 overflow-y-auto">
 
         // Form Submission Methods
         async save() {
-    if (this.form.items.length === 0) {
-        alert('Tambahkan minimal satu barang');
-        return;
-    }
-
-    try {
-        const response = await fetch('/barang-keluar', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify(this.form)
-        });
-
-        const result = await response.json();
-        console.log('Save result:', result);
-
-        if (!response.ok) {
-            if (response.status === 422) {
-                this.errors = result.errors;
+            if (this.form.items.length === 0) {
+                alert('Tambahkan minimal satu barang');
                 return;
             }
-            throw new Error(result.error || 'Terjadi kesalahan');
-        }
 
-        // Set flash message
-        this.flash.message = result.message;
-        setTimeout(() => this.flash.message = '', 3000);
+            if (!this.form.jumlah_bayar || this.calculated_change < 0) {
+                alert('Jumlah bayar tidak mencukupi');
+                return;
+            }
 
-        // Jika ada data struk langsung, gunakan itu
-        if (result.struk) {
-            this.strukData = result.struk;
-            
-            // Close form modal
-            this.closeModal();
-            
-            // Reload data
-            await this.loadData();
-            
-            // Show print confirmation modal
-            setTimeout(() => {
-                console.log('Showing print modal');
-                this.showConfirmPrintModal = true;
-            }, 100);
-        } else {
-            console.log('No struk data in response');
-            this.closeModal();
-            await this.loadData();
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert(error.message || 'Terjadi kesalahan! Silakan coba lagi.');
-    }
-},
+            try {
+                const response = await fetch('/barang-keluar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(this.form)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    if (response.status === 422) {
+                        this.errors = result.errors;
+                        return;
+                    }
+                    throw new Error(result.error || 'Terjadi kesalahan');
+                }
+
+                // Set flash message
+                this.flash.message = result.message;
+                setTimeout(() => this.flash.message = '', 3000);
+
+                // Jika ada data struk langsung, gunakan itu
+                if (result.struk) {
+                    this.strukData = result.struk;
+                    
+                    // Close form modal
+                    this.closeModal();
+                    
+                    // Reload data
+                    await this.loadData();
+                    
+                    // Show print confirmation modal
+                    setTimeout(() => {
+                        this.showConfirmPrintModal = true;
+                    }, 100);
+                } else {
+                    this.closeModal();
+                    await this.loadData();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert(error.message || 'Terjadi kesalahan! Silakan coba lagi.');
+            }
+        },
 
         // Struk Methods
         async loadStrukData(id) {
@@ -606,6 +693,8 @@ class="fixed inset-0 z-50 overflow-y-auto">
                 this.strukData = data;
                 this.strukData.items = this.strukData.items || [];
                 this.strukData.total_keseluruhan = this.strukData.total_keseluruhan || 'Rp 0,00';
+                this.strukData.jumlah_bayar = this.strukData.jumlah_bayar || 'Rp 0,00';
+                this.strukData.kembalian = this.strukData.kembalian || 'Rp 0,00';
             } catch (error) {
                 console.error('Error:', error);
                 alert(error.message || 'Gagal memuat data struk');
@@ -647,17 +736,19 @@ class="fixed inset-0 z-50 overflow-y-auto">
             this.form = {
                 tanggal: new Date().toISOString().slice(0, 16),
                 keterangan: '',
+                jumlah_bayar: '',
                 items: []
             };
             this.searchBarang = '';
             this.selectedBarang = null;
             this.selectedTipe = 'normal';
             this.selectedJumlah = '';
+            this.calculated_change = 0;
             this.searchResults = [];
             this.errors = {};
         },
 
-        // Remaining methods stay the same...
+        // Item Management Methods
         selectBarang(barang) {
             const existingItem = this.form.items.find(item => 
                 item.barang_masuk_id === barang.id
@@ -712,6 +803,7 @@ class="fixed inset-0 z-50 overflow-y-auto">
             };
 
             this.form.items.push(item);
+            this.calculateChange();
             this.searchBarang = '';
             this.selectedBarang = null;
             this.selectedTipe = 'normal';
@@ -722,6 +814,7 @@ class="fixed inset-0 z-50 overflow-y-auto">
 
         removeItem(index) {
             this.form.items.splice(index, 1);
+            this.calculateChange();
         },
 
         confirmDelete(id) {
@@ -771,114 +864,215 @@ class="fixed inset-0 z-50 overflow-y-auto">
                         <style>
                             @page {
                                 size: 58mm auto;
-                                margin: 0mm;
+                                margin: 2mm;
                             }
                             body { 
-                                font-family: monospace; 
-                                font-size: 10px;
-                                width: 58mm;
+                                font-family: 'Courier New', monospace; 
+                                font-size: 12px;
+                                line-height: 1.2;
+                                width: 54mm;
                                 margin: 0 auto;
-                                padding: 3px;
-                            }
-                            .center { text-align: center; }
-                            .header { font-weight: bold; }
-                            .shop-name { font-size: 12px; font-weight: bold; margin-bottom: 2px; }
-                            .shop-address { font-size: 9px; line-height: 1.1; margin-bottom: 1px; }
-                            .shop-phone { font-size: 9px; margin-bottom: 2px; }
-                            .divider { border-bottom: 1px dashed #000; margin: 3px 0; }
-                            .bold-divider { border-bottom: 1px solid #000; margin: 3px 0; }
-                            
-                            table { 
-                                width: 100%; 
-                                border-collapse: collapse; 
-                                table-layout: fixed;
+                                padding: 2mm;
+                                color: #000;
+                                background: white;
                             }
                             
-                            th, td { 
-                                font-size: 9px;
-                                padding: 2px; 
-                                white-space: nowrap;
-                                overflow: hidden;
-                                text-overflow: ellipsis;
+                            .center { 
+                                text-align: center; 
+                                margin: 2px 0;
                             }
                             
-                            th { 
+                            .header { 
                                 font-weight: bold; 
+                                font-size: 14px;
+                                margin: 3px 0;
+                            }
+                            
+                            .logo { 
+                                width: 45mm; 
+                                height: auto; 
+                                margin: 2px auto;
+                                display: block;
+                                max-width: 100%;
+                            }
+                            
+                            .divider { 
+                                border-bottom: 1px dashed #000; 
+                                margin: 4px 0; 
+                                height: 1px;
+                            }
+                            
+                            .bold-divider { 
+                                border-bottom: 2px solid #000; 
+                                margin: 4px 0; 
+                                height: 2px;
+                            }
+                            
+                            .store-info {
+                                font-size: 10px;
+                                margin: 2px 0;
+                                line-height: 1.1;
+                            }
+                            
+                            .transaction-info {
+                                font-size: 10px;
+                                margin: 2px 0;
                                 text-align: left;
                             }
                             
-                            .items-table {
-                                margin: 0;
+                            .items-section {
+                                margin: 4px 0;
                             }
                             
-                            .col-barang { width: 35%; text-align: left; }
-                            .col-qty { width: 10%; text-align: center; }
-                            .col-harga { width: 25%; text-align: right; }
-                            .col-total { width: 30%; text-align: right; }
-                            
-                            .total-row td {
-                                font-weight: bold;
-                                padding-top: 2px;
-                                font-size: 10px;
-                            }
-                            
-                            .date-row {
+                            .item-row {
                                 margin: 2px 0;
+                                font-size: 11px;
+                                display: block;
+                                word-wrap: break-word;
+                            }
+                            
+                            .item-name {
+                                font-weight: bold;
+                                display: block;
+                                margin-bottom: 1px;
+                            }
+                            
+                            .item-details {
+                                display: flex;
+                                justify-content: space-between;
+                                font-size: 10px;
+                                margin-bottom: 2px;
+                            }
+                            
+                            .item-qty-price {
+                                text-align: left;
+                            }
+                            
+                            .item-total {
+                                text-align: right;
+                                font-weight: bold;
+                            }
+                            
+                            .payment-section {
+                                margin-top: 4px;
+                                padding-top: 2px;
+                            }
+                            
+                            .payment-row {
+                                display: flex;
+                                justify-content: space-between;
+                                font-size: 11px;
+                                margin: 2px 0;
+                            }
+                            
+                            .total-row {
+                                display: flex;
+                                justify-content: space-between;
+                                font-weight: bold;
+                                font-size: 13px;
+                                margin: 3px 0;
+                                padding: 2px 0;
+                            }
+                            
+                            .footer-info {
+                                margin-top: 6px;
                                 font-size: 9px;
+                                line-height: 1.2;
                             }
                             
                             .thanks {
-                                margin-top: 3px;
+                                margin-top: 6px;
                                 font-style: italic;
-                                font-size: 9px;
+                                font-size: 10px;
                             }
                         </style>
                     </head>
                     <body>
                         <div class="center">
-                            <div class="shop-name">UD. PRIMA ABADI</div>
-                            <div class="shop-address">JL. DIPONEGORO NO. 23 DEPAN SPBU KALISAT</div>
-                            <div class="shop-phone">082230497900</div>
+                            <img src="/logo.jpg" alt="Logo Toko" class="logo" onerror="this.style.display='none'">
                         </div>
+                        
+                        <div class="center store-info">
+                            <div style="font-weight: bold; font-size: 12px;">TOKO SWALAYAN</div>
+                            <div>Jl. Contoh No. 123</div>
+                            <div>Telp: (021) 1234-5678</div>
+                        </div>
+                        
                         <div class="bold-divider"></div>
-                        <div class="center header" style="font-size: 11px;">NOTA BARANG</div>
+                        
+                        <div class="center header">NOTA PENJUALAN</div>
+                        
                         <div class="divider"></div>
                         
-                        <div class="date-row">Tanggal: ${this.strukData.tanggal}</div>
+                        <div class="transaction-info">
+                            <div>Tanggal: ${this.strukData.tanggal || '-'}</div>
+                            <div>Kasir: Admin</div>
+                            ${this.strukData.keterangan ? `<div>Ket: ${this.strukData.keterangan}</div>` : ''}
+                        </div>
+                        
                         <div class="divider"></div>
-
-                        <table class="items-table">
-                            <tr>
-                                <th class="col-barang">Barang</th>
-                                <th class="col-qty">Qty</th>
-                                <th class="col-harga">Harga</th>
-                                <th class="col-total">Total</th>
-                            </tr>
-                            <tr><td colspan="4"><div class="divider"></div></td></tr>
-                            ${this.strukData.items.map(item => `
-                                <tr>
-                                    <td class="col-barang">${item.nama_barang}</td>
-                                    <td class="col-qty">${item.jumlah}</td>
-                                    <td class="col-harga">${item.harga}</td>
-                                    <td class="col-total">${item.total}</td>
-                                </tr>
-                            `).join('')}
-                            <tr><td colspan="4"><div class="divider"></div></td></tr>
-                            <tr class="total-row">
-                                <td colspan="2">Total</td>
-                                <td colspan="2" class="col-total">${this.strukData.total_keseluruhan}</td>
-                            </tr>
-                        </table>
-
+                        
+                        <div class="items-section">
+                            ${this.strukData.items && this.strukData.items.length > 0 ? 
+                                this.strukData.items.map((item, index) => `
+                                    <div class="item-row">
+                                        <div class="item-name">${item.nama_barang || 'Barang'}</div>
+                                        <div class="item-details">
+                                            <div class="item-qty-price">
+                                                ${item.jumlah || '0'} x ${item.harga || 'Rp 0'}
+                                            </div>
+                                            <div class="item-total">${item.total || 'Rp 0'}</div>
+                                        </div>
+                                        ${index < this.strukData.items.length - 1 ? '<div class="divider"></div>' : ''}
+                                    </div>
+                                `).join('') 
+                                : '<div class="item-row">Tidak ada item</div>'
+                            }
+                        </div>
+                        
                         <div class="divider"></div>
-                        <div class="center thanks">Terima Kasih Atas Kunjungan Anda</div>
+                        
+                        <div class="payment-section">
+                            <div class="total-row">
+                                <div>TOTAL:</div>
+                                <div>${this.strukData.total_keseluruhan || 'Rp 0,00'}</div>
+                            </div>
+                            <div class="payment-row">
+                                <div>Bayar:</div>
+                                <div>${this.strukData.jumlah_bayar || 'Rp 0,00'}</div>
+                            </div>
+                            <div class="payment-row">
+                                <div>Kembalian:</div>
+                                <div>${this.strukData.kembalian || 'Rp 0,00'}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="divider"></div>
+                        
+                        <div class="center footer-info">
+                            <div>*** TERIMA KASIH ***</div>
+                            <div>Barang yang sudah dibeli</div>
+                            <div>tidak dapat dikembalikan</div>
+                            <div style="font-size: 8px;">Printed: ${new Date().toLocaleString('id-ID')}</div>
+                        </div>
+                        
+                        <div class="center thanks">
+                            Selamat Berbelanja Kembali
+                        </div>
+                        
+                        <div style="height: 10mm;"></div>
                     </body>
                 </html>
             `);
+            
             strukWindow.document.close();
+            
             setTimeout(() => {
                 strukWindow.print();
-            }, 250);
+                setTimeout(() => {
+                    strukWindow.close();
+                }, 1000);
+            }, 500);
         },
 
         // Utility Methods
@@ -887,7 +1081,9 @@ class="fixed inset-0 z-50 overflow-y-auto">
         },
         
         formatDate(date) {
-            return new Date(date).toLocaleDateString('id-ID', {
+            if (!date) return '-';
+            const d = new Date(date);
+            return d.toLocaleDateString('id-ID', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric',

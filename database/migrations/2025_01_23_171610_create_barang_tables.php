@@ -48,6 +48,9 @@ return new class extends Migration {
             $table->id();
             $table->date('tanggal');
             $table->string('keterangan')->nullable();
+            $table->decimal('total_harga', 15, 2)->default(0);
+            $table->decimal('jumlah_bayar', 15, 2)->default(0);
+            $table->decimal('kembalian', 15, 2)->default(0);
             $table->timestamps();
         });
 
@@ -60,6 +63,7 @@ return new class extends Migration {
             $table->enum('tipe', ['normal', 'ecer']);
             $table->timestamps();
         });
+
         Schema::create('pengeluaran', function (Blueprint $table) {
             $table->id();
             $table->string('nama_pengeluaran');
@@ -71,6 +75,7 @@ return new class extends Migration {
 
     public function down()
     {
+        Schema::dropIfExists('pengeluaran');
         Schema::dropIfExists('barang_keluar_detail');
         Schema::dropIfExists('barang_keluar');
         Schema::dropIfExists('barang_masuk');

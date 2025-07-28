@@ -15,6 +15,16 @@ class BarangKeluar extends Model
     protected $fillable = [
         'tanggal',
         'keterangan',
+        'total_harga',
+        'jumlah_bayar',
+        'kembalian'
+    ];
+
+    protected $casts = [
+        'tanggal' => 'date',
+        'total_harga' => 'decimal:2',
+        'jumlah_bayar' => 'decimal:2',
+        'kembalian' => 'decimal:2'
     ];
 
     public function detail()

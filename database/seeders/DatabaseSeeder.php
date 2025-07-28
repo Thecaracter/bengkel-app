@@ -19,11 +19,16 @@ class DatabaseSeeder extends Seeder
             'email' => 'admin@gmail.com',
             'password' => Hash::make('password')
         ]);
+        User::factory()->create([
+            'name' => 'user',
+            'email' => 'penjualan@gmail.com',
+            'password' => Hash::make('password')
+        ]);
         $this->call([
             SatuanSeeder::class,
             KategoriSeeder::class,
             BarangSeeder::class,
-            BarangMasukSeeder::class,
+            // BarangMasukSeeder::class,
         ]);
     }
 }
