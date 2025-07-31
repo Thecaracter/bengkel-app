@@ -267,8 +267,8 @@
                                         <!-- Display Harga -->
                                         <div x-show="selectedBarang" class="mt-2">
                                             <div class="text-sm text-gray-600">
-                                                Harga: <span x-text="formatCurrency(selectedTipe === 'normal' ? selectedBarang.harga_jual : selectedBarang.harga_ecer)"></span>
-                                                per <span x-text="selectedTipe === 'normal' ? selectedBarang.satuan_normal : selectedBarang.satuan_ecer"></span>
+                                                Harga: <span x-text="formatCurrency(selectedBarang && (selectedTipe === 'normal' ? selectedBarang.harga_jual : selectedBarang.harga_ecer))"></span>
+                                                per <span x-text="selectedBarang ? (selectedTipe === 'normal' ? selectedBarang.satuan_normal : selectedBarang.satuan_ecer) : ''"></span>
                                             </div>
                                         </div>
 
@@ -578,7 +578,8 @@ function barangKeluarHandler() {
         },
 
         async searchBarangMasuk() {
-            if (!this.searchBarang) {
+            // Clear results if search is too short
+            if (!this.searchBarang || this.searchBarang.trim().length < 1) {
                 this.searchResults = [];
                 this.showSearchResults = false;
                 return;
@@ -586,8 +587,7 @@ function barangKeluarHandler() {
 
             try {
                 const params = new URLSearchParams({
-                    search: this.searchBarang,
-                    barcode: this.searchBarang
+                    search: this.searchBarang.trim()
                 });
 
                 const response = await fetch(`/barang-keluar/search-barang?${params}`, {
@@ -597,18 +597,28 @@ function barangKeluarHandler() {
                     }
                 });
 
-                if (!response.ok) throw new Error('Network response was not ok');
-                this.searchResults = await response.json();
-                this.showSearchResults = true;
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Ensure data is array
+                this.searchResults = Array.isArray(data) ? data : [];
+                this.showSearchResults = this.searchResults.length > 0;
 
+                // Auto-select jika hanya satu hasil dan cocok dengan barcode
                 if (this.searchResults.length === 1 && 
-                    this.searchResults[0].barcode === this.searchBarang) {
+                    this.searchResults[0].barcode === this.searchBarang.trim()) {
                     this.selectBarang(this.searchResults[0]);
                 }
             } catch (error) {
-                console.error('Error:', error);
+                console.error('Error searching barang:', error);
                 this.searchResults = [];
                 this.showSearchResults = false;
+                
+                // Tampilkan error ke user
+                alert('Terjadi kesalahan saat mencari barang. Silakan coba lagi.');
             }
         },
 
@@ -750,6 +760,12 @@ function barangKeluarHandler() {
 
         // Item Management Methods
         selectBarang(barang) {
+            // Check if barang is valid
+            if (!barang || !barang.id) {
+                alert('Data barang tidak valid');
+                return;
+            }
+
             const existingItem = this.form.items.find(item => 
                 item.barang_masuk_id === barang.id
             );
@@ -1093,6 +1109,7 @@ function barangKeluarHandler() {
         },
 
         formatNumber(number) {
+            if (number === null || number === undefined) return '0,00';
             return new Intl.NumberFormat('id-ID', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
@@ -1100,6 +1117,7 @@ function barangKeluarHandler() {
         },
 
         formatCurrency(amount) {
+            if (amount === null || amount === undefined) return 'Rp 0,00';
             return new Intl.NumberFormat('id-ID', {
                 style: 'currency',
                 currency: 'IDR'
